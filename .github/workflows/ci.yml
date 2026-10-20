@@ -15,7 +15,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configure
         run: cmake -S injector -B build -A x64
@@ -24,7 +24,7 @@ jobs:
         run: cmake --build build --config Release --parallel
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: injector-windows-x64
           path: build/Release/injector.exe
@@ -35,7 +35,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -62,7 +62,7 @@ jobs:
 
       - name: Upload artifact
         if: steps.sdk.outputs.present == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: WWMoonlight-windows-x64
           path: build/wuwa-moonlight/Release/WWMoonlight.dll
