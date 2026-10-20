@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-injector:
+    name: Build injector (Windows x64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S injector -B build -A x64
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: injector-windows-x64
+          path: build/Release/injector.exe
+          if-no-files-found: error
+
+  build-dll:
+    name: Build WWMoonlight.dll
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # CppSDK is generated per game build and intentionally gitignored upstream.
+      # When the headers are absent there is nothing to compile, so skip the DLL.
+      - name: Detect CppSDK headers
+        id: sdk
+        shell: pwsh
+        run: |
+          if (Test-Path 'wuwa-moonlight/ext/CppSDK/SDK/SDK.hpp') {
+            [System.IO.File]::AppendAllText($env:GITHUB_OUTPUT, "present=true`n")
+          } else {
+            [System.IO.File]::AppendAllText($env:GITHUB_OUTPUT, "present=false`n")
+            Write-Host '::notice title=CppSDK not found::The generated SDK headers are not part of this repository, so WWMoonlight.dll was not built.'
+          }
+
+      - name: Configure
+        if: steps.sdk.outputs.present == 'true'
+        run: cmake -S . -B build -A x64
+
+      - name: Build
+        if: steps.sdk.outputs.present == 'true'
+        run: cmake --build build --config Release --target WWMoonlight --parallel
+
+      - name: Upload artifact
+        if: steps.sdk.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: WWMoonlight-windows-x64
+          path: build/wuwa-moonlight/Release/WWMoonlight.dll
+          if-no-files-found: error
